@@ -6,11 +6,11 @@ def cls():
 
 piecesASCII = {
     'w' : {
-        'wB'  : "         \n         \n         \n         \n         ",
+        'wB' : "         \n         \n         \n         \n         ",
         'pw' : "         \n   ( )   \n   / \   \n  /   \  \n         ",
         'pb' : "         \n   (|)   \n   /|\   \n  /|||\  \n         ",
-        'rw' : "         \n [ ''' ] \n  |   |  \n  |   |  \n         ",
-        'rb' : "         \n [ ''' ] \n  | | |  \n  | | |  \n         ",
+        'rw' : "         \n [ ''' ] \n |   |  \n |   |  \n         ",
+        'rb' : "         \n [ ''' ] \n | | |  \n | | |  \n         ",
         'bw' : "    .    \n   / \   \n   / \   \n  /_ _\  \n         ",
         'bb' : "    .    \n   /|\   \n   /|\   \n  /_|_\  \n         ",
         'nw' : "    __   \n   /  \  \n    / /  \n   /_ _\ \n         ",
@@ -25,7 +25,7 @@ piecesASCII = {
 
     ,
     'b' : {
-        'bB'  : "---------\n---------\n---------\n---------\n---------",
+        'bB' : "---------\n---------\n---------\n---------\n---------",
         'pw' : "---------\n---( )---\n---/ \---\n--/   \--\n---------",
         'pb' : "---------\n---(|)---\n---/|\---\n--/|||\--\n---------",
         'rw' : "---------\n-[ ''' ]-\n--|   |--\n--|   |--\n---------",
@@ -50,6 +50,27 @@ PiecesDict = {
     "Queen":'q',
     "King":'k'
 }
+
+asciiChars = {
+    'b' : {
+        'p':'♟︎',
+        'b':'♝',
+        'n':'♞',
+        'r':'♜',
+        'q':'♛',
+        'k':'♚',
+    },
+    'w' : {
+        'p':'♙',
+        'b':'♗',
+        'n':'♘',
+        'r':'♖',
+        'q':'♕',
+        'k':'♔',
+    }
+}
+
+
 colors = {
     "black":'b',
     "white":'w',
@@ -86,8 +107,9 @@ errors = {
     "PieceIsDefendingKing":"Dana figura broni króla",
     "BadInput_ToLong":"Podana wartość jest jest za długa i nie odnosi się do żadnego pola",
     "BadInput_BadChars":"Podana wartość nie odnosi się do żadnego pola",
+    "BadInput_IllegalMove" : "This move cannot be done by this figure"
 
 }
 strings = {
-    "chosingFigureInput":"Proszę wybrać figurę: "
+    "chosingFigureInput":"Choose figure: "
 }

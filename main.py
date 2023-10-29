@@ -12,8 +12,10 @@ from rich.text import Text
 from rich.markdown import Markdown
 
 from chessboard import chessboard
-from dicts import piecesASCII, colors
+from dicts import piecesASCII, colors, asciiChars
 import os, shutil
+
+import pickle
 
 
 def cls():
@@ -24,16 +26,8 @@ logging.basicConfig(filename='example.log',format='%(asctime)s %(message)s', dat
 logging.debug("Lanuching Main.py")
 
 console = Console()
-
-# cb = chessboard()
-# cb.newBoard()
-# # logging.debug(cb.translateMoveTo01("a",2))
-# # logging.debug(cb.translateMoveTo01("b",2))
-# logging.debug(cb.translateMoveTo01("a",8))
-
-# cb.startGame()
-# logging.debug("Starting game")
-
+side = 'w'
+oneTime = True
 # === MeinManu ===
 
 MainMenu = Layout()
@@ -91,25 +85,30 @@ console.size = (_width-1, _height-4)
 GamePanel["root"].height = console.height - 40
 
 
-GamePanel["Info"].size = 40
+GamePanel["Info"].size = 35
 
 
 
+# ------------------------------------------------
+# ----- creating table for gameboard display -----
+# ------------------------------------------------
 
-#----- creating table for gameboard display -----
 
-
-
-def resetTable(board, moves, attacks):
+def resetTable(chessboard):
+    board,moves,attacks,position = chessboard.returnBoard()
     table = None
     table = Table( show_footer=True ,style=None, box=box.MINIMAL)
     let = ["","a","b","c","d","e","f","g","h"]
     for a in let:
-        table.add_column(a, justify="cecnter")
+        table.add_column(a, justify="center", width=9, footer=a)
     
+    ran = range(8)
+    if(side == 'b'):
+        ran = range(7, -1, -1)
     
 
-    for a in range(8):
+
+    for a in ran:
         rowNumber = "\n\n" + str(8-a)
             
         valueColFig = []
@@ -119,8 +118,14 @@ def resetTable(board, moves, attacks):
         for b in range(8):
             valueColFig.append(board[a][b][0])
             valueBckCol.append(board[a][b][1])
-            if((a,b) in moves):
-                asciitab.append(piecesASCII[valueBckCol[b]]['move'])
+            if((a,b) == position):
+                tmp = Text(piecesASCII[valueBckCol[b]][valueColFig[b]])
+                tmp.stylize("bold blue")
+                asciitab.append(tmp)
+            elif((a,b) in moves):
+                tmp = Text(piecesASCII[valueBckCol[b]]['move'])
+                tmp.stylize("bold blue")
+                asciitab.append(tmp)
             elif((a,b) in attacks):
                 tmp = Text(piecesASCII[valueBckCol[b]][valueColFig[b]])
                 tmp.stylize("bold red")
@@ -128,62 +133,102 @@ def resetTable(board, moves, attacks):
             else:
                 asciitab.append(piecesASCII[valueBckCol[b]][valueColFig[b]])
             
-        table.add_row(rowNumber, asciitab[0], asciitab[1], asciitab[2], asciitab[3], asciitab[4], asciitab[5], asciitab[6], asciitab[7])
+        table.add_row(rowNumber, asciitab[0], asciitab[1], asciitab[2], asciitab[3], asciitab[4], asciitab[5], asciitab[6], asciitab[7],)
     table = Align.center(table, vertical="bottom")
     GamePanel["Chess"].update(table)
     
 
+    moveList = chessboard.getMoveList()
+    move_count = chessboard.move_count
+
+
+    info = None
+    info = Table( show_footer=True ,style=None, box=box.MINIMAL)
+
+    # figuremoved, x1,y1,x2,y2, None or Figure Destoyed 
+    info.add_column("Move", justify="center", width=8)
+    info.add_column("piece", justify="center", width=8)
+    info.add_column("orig", justify="center", width=8)
+    info.add_column("dest", justify="center", width=8)
+    info.add_column("target", justify="center", width=10)
+
+    if(oneTime == True):
+        oneTime==False
+    else:
+        for a in moveList:
+            fig1 = a[0][0]
+            col1 = a[0][1]
+            fig2,col2
+            if(a[5]!=None):
+                fig2 = a[5][0]
+                col2 = a[5][1]
+            info.add_row(asciiChars[col1][fig1], a[1]+a[2], a[3]+a[4], "--" if fig2 == None else asciiChars[col2][fig2])
+
+        
+    info = Align.center(info, vertical="middle")
+    
+    GamePanel["Info"].update(info)
 
 
 
 
 
 
-inp = "What you want do do? - "
+inp1 = "What you want do do? - "
+inp2 = "Chose Side w/b - "
 przerwa = ""
-tmp = console.width/2 - len(inp)/2
+tmp = console.width/2 - len(inp1)/2
 for a in range(int(tmp)):
     przerwa = przerwa + " "
-promptMainMenu = przerwa + inp
+promptMainMenu = przerwa + inp1
+promptChoseSide = przerwa + inp2
 
 lay = 0
 
-chessboards = [chessboard() for x in range(5)]
+
 with console.screen():
     while(True):
-        cls()
-
+        
         if(lay == 0):
+            cls()
             console.print(MainMenu)
             wynik = Prompt.ask(promptMainMenu)
             if(wynik in ['start',"1"]): 
                 cb = chessboard()
-                cb.newBoard()
-                    
-                
+
+                side = Prompt.ask(promptChoseSide, choices=['w',"W","b","B"], show_choices=False)
+                if(side in ['w',"W"]):
+                    cb.newBoard()
+                else: 
+                    cb.newBoard(1)
+                    side = 'b'
+
                 lay = 1
             if(wynik in ['con',2]): lay = 2
             if(wynik in ['credits',3]): lay = 3
             if(wynik in ['exit',4]): lay = 4
         if(lay == 1):
-            board,moves,attacks = cb.returnBoard()
-            resetTable(board,moves,attacks)
+            
+            resetTable(cb)
+        
+            cls()
             print(GamePanel)
             while(True):
                 tmp = cb.ChooseFigure()
+                
+                resetTable(cb)
                 cls()
-                board,moves,attacks = cb.returnBoard()
-                resetTable(board,moves,attacks)
                 print(GamePanel)    
                 if(tmp): break
-            while not(cb.Move()): 
+            while(True):
+                tmp = cb.Move()
+                resetTable(cb)
                 cls()
-                board,moves,attacks = cb.returnBoard()
-                resetTable(board,moves,attacks)
                 print(GamePanel)    
+                if(tmp == True): break
                 
                     
-            lay == 0
+            #lay == 0
             
         if(lay == 2):
             pass
