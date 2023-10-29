@@ -1,5 +1,9 @@
 from dicts import *
 
+import logging
+logging.basicConfig(filename='example.log',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', encoding='utf-8', level=logging.DEBUG)
+
+
 class Piece:
     def __init__(self,x,y,figCol):
         self.x = x
@@ -25,16 +29,7 @@ class Piece:
 
     def ReturnPossibleMoves(self,board): return 
         
-    
-#   0 1 2 3 4 5 6 7
-# 0 
-# 1
-# 2
-# 3
-# 4
-# 5
-# 6
-# 7
+
 
 class Pawn(Piece):
     def __init__(self,x, y, figCol):
@@ -62,17 +57,27 @@ class Pawn(Piece):
         return xx,yy
         
     ###### #pawn tranformation to do       
+
     def ReturnPossibleMoves(self,board):
+        logging.debug(f'Pawn attemping ReturnPossibleMoves() Method')
+        logging.debug(f'Pawn Figure info: {self.x,self.y,self.color,self.figure}')
         moves = []
         attacks = []
+
         if(self.color == colors["white"]):
-            for a in range(1,3):
-                if(board[self.x-a][self.y].isEmpty()):
-                    moves.append((self.x-a,self.y))
-        else:
-            for a in range(1,3):
-                if(board[self.x+a][self.y].isEmpty()):
-                    moves.append((self.x+a,self.y))
+            xDirection = lambda a, b : (a - b)
+        else: xDirection = lambda a, b : (a + b)
+
+        for a in range(1,3):
+            xTarget = xDirection(self.x, a)
+            logging.debug(F'Pawn attempting check on board[x-a][y]: {board[xTarget][self.y].isEmpty()}')
+            logging.debug(F'Pawn attempting check on board[x-a][y]: {board[xTarget][self.y]} {xTarget , self.y}')
+            if(7<xTarget<0):
+                pass
+            elif board[xTarget][self.y].isEmpty() is True:
+                moves.append((xTarget, self.y))
+                logging.debug(f'Pawn {xTarget, self.y} is empty appended moves {moves}')
+
         if(self.y==0):
             t = self.rightAttack(board)
             if(t): moves.append(t)
@@ -84,9 +89,11 @@ class Pawn(Piece):
             if(t): moves.append(t)
             t = self.leftAttack(board)
             if(t): moves.append(t)
+        logging.debug(f'Pawn ReturnPossibleMove(): returning values: {moves, attacks}')
+        return moves, attacks
 
-        
-        return board, moves, attacks
+
+
 
 
 
@@ -96,49 +103,52 @@ class Bishop(Piece):
         self.figure = PiecesDict["Bishop"]
 
 
-
-
-    def ReturnPossibleMove(self,board):
+    def ReturnPossibleMoves(self,board):
         moves = []
         attacks = []
         
+
         x , y  = self.x,self.y
-        while(x >= 0 or y >= 0):
+        while(x >= 0 and y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x-=1
             y-=1
         
         x , y  = self.x,self.y
-        while(x <= 7 or y <= 7):
+        while(x <= 7 and y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x+=1
             y+=1
 
         x , y  = self.x,self.y
-        while(x >= 0 or y <= 7):
+        while(x >= 0 and y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x-=1
             y+=1
         
         x , y  = self.x,self.y
-        while(x <= 7 or y >= 0):
+        while(x <= 7 and y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x+=1
             y-=1
         
-        return board, moves, attacks
+        return moves, attacks
 
 
 
@@ -148,43 +158,70 @@ class Knight(Piece):
         super().__init__(x, y, figCol)
         self.figure = PiecesDict["Knight"]
 
+    def ReturnPossibleMoves(self, board):
+        moves = []
+        attacks = []
+        x, y = self.x, self.y
+        possiblities = [
+            (x+1,y-2),(x-1,y-2),(x+1,y+2),(x-1,y+2), # horizontal
+            (x+2,y-1),(x+2, y+1),(x-2,y+1),(x-2,y-1), # vertical
+        ]        
+
+        for a in possiblities:
+            x,y = a
+            if not (x < 0 or x > 7 or y < 0 or y > 7):
+                if(board[x][y].isEmpty()): moves.append((x,y))
+                elif(board[x][y].getColorOfFigure() != self.getFigCol()): attacks.append((x,y))
+        return moves, attacks
+
 class Rock(Piece):
     def __init__(self, x, y, figCol):
         super().__init__(x, y, figCol)
         self.figure = PiecesDict["Rock"]
+        self.hasMoved = False
     
+    
+    def setMovedToTrue(self):
+        self.hasMoved = True
+
+
+
     def ReturnPossibleMoves(self, board):
         moves = []
         attacks = []
-        x , y  = self.x,self.y
+        x , y = self.x, self.y            
         while(x >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             x-=1
-        x = self.x
+        x , y = self.x, self.y
         while(x <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             x+=1
-        y = self.y
+        x , y = self.x, self.y
         while(y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             y-=1
-        y = self.y
+        x , y = self.x, self.y
         while(y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y)) 
             y+=1
-        return board, moves, attacks
+        return moves, attacks
 
 class Queen(Piece):
     def __init__(self, x, y, figCol):
@@ -195,74 +232,81 @@ class Queen(Piece):
         moves = []
         attacks = []
         #horizontal
-        x , y  = self.x,self.y
+        x , y = self.x, self.y            
         while(x >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             x-=1
-        x = self.x
+        x , y = self.x, self.y
         while(x <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             x+=1
-        y = self.y
+        x , y = self.x, self.y
         while(y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y))
             y-=1
-        y = self.y
+        x , y = self.x, self.y
         while(y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if(self.x == x and self.y ==y): pass
+                else: break 
+            else: attacks.append((x,y)) 
             y+=1
         
         # diagonal 
 
         x , y  = self.x,self.y
-        while(x >= 0 or y >= 0):
+        while(x >= 0 and y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x-=1
             y-=1
         
         x , y  = self.x,self.y
-        while(x <= 7 or y <= 7):
+        while(x <= 7 and y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x+=1
             y+=1
 
         x , y  = self.x,self.y
-        while(x >= 0 or y <= 7):
+        while(x >= 0 and y <= 7):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x-=1
             y+=1
         
         x , y  = self.x,self.y
-        while(x <= 7 or y >= 0):
+        while(x <= 7 and y >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
-            if(board[x][y].getColorOfFigure() != self.color): 
-                attacks.append((x,y))
-                break 
+            elif(board[x][y].getColorOfFigure() == self.color): 
+                if (self.x == x and self.y == y): pass
+                else: break  
+            else: attacks.append((x,y)) 
             x+=1
             y-=1
-
-        return board, moves, attacks
+        return moves, attacks
 
 class King(Piece):
     def __init__(self, x, y, figCol):
@@ -270,7 +314,7 @@ class King(Piece):
         self.figure = PiecesDict["King"]
         self.hasMoved = False
 
-    def setMovesToTrue(self):
+    def setMovesdToTrue(self):
         self.hasMoved = True
 
     def ReturnPossibleMoves(self, board):
@@ -287,6 +331,6 @@ class King(Piece):
             if not(x < 0 or x > 7 or y < 0 or y > 7):
                 if(board[x,y].isEmpty()): moves.append((x,y))       
                 elif(board[x][y].getColorOfFigure() != self.getFigCol()): attacks.append((x,y))
-    
+
         
-        return super().ReturnPossibleMoves(board)
+        return
