@@ -15,29 +15,22 @@ class field:
         self.isChossen = False
         self.possibleMove = False
         self.backGroundColor = None
+        self.figureStory = []
         
     def setFieldOcupant(self, fig):
         self.figure = fig
         fig.changeCordinates(self.x,self.y)
+        self.figureStory.append(fig)
 
     def removeFieldOcupant(self):
         self.figure = None
-        
-
-    def getPieceAndColor(self):
-        if(self.figure!=None):
-            return self.figure.getFigAndCol()    
-
     
-    def setBackGroundColor(self, color):
-        self.backGroundColor = color
+    def undoFieldOcupant(self):
+        self.figureStory.pop()
+        self.figure = self.figureStory[-1]
 
-    def getBackGroundColor(self): return self.backGroundColor
-        
-        
-
-    def setpossibleMove(self): self.possibleMove = True
-    def rempossibleMove(self): self.possibleMove = False
+    def getLastFigure(self):
+        return self.figureStory[-1]
 
     def isEmpty(self): 
         if self.figure is None: return True
@@ -47,8 +40,14 @@ class field:
 
     def getColorOfFigure(self): 
         if(self.figure): return self.figure.getFigCol()
+    
+    def getPieceAndColor(self):
+        if(self.figure!=None):
+            return self.figure.getFigAndCol()    
 
-    def DefendingKing(self): return self.isDefendingKing
+    def setBackGroundColor(self, color):
+        self.backGroundColor = color
 
-    def isFieldChosen(self): return self.isChossen
+    def getBackGroundColor(self): return self.backGroundColor
+
     

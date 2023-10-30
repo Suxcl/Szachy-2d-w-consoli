@@ -36,10 +36,16 @@ class Pawn(Piece):
         super().__init__(x,y, figCol)
         self.figure = PiecesDict["Pawn"]
         self.hasMoved = False
+        self.MoveNumber = None
     
     
-    def setMovedToTrue(self):
+    def setMovedToTrue(self, count):
         self.hasMoved = True
+        self.MoveNumber = count
+
+    def setMovedToFalse(self):
+        self.hasMoved = False
+        self.MoveNumber = None
 
     def leftAttack(self, board): 
         yy = self.y-1
@@ -98,11 +104,6 @@ class Pawn(Piece):
             if(t): attacks.append(t)
         logging.debug(f'Pawn ReturnPossibleMove(): returning values: {moves, attacks}')
         return moves, attacks
-
-
-
-
-
 
 class Bishop(Piece):
     def __init__(self, x, y, figCol):
@@ -165,9 +166,6 @@ class Bishop(Piece):
         
         return moves, attacks
 
-
-
-
 class Knight(Piece):
     def __init__(self, x, y, figCol):
         super().__init__(x, y, figCol)
@@ -194,12 +192,15 @@ class Rock(Piece):
         super().__init__(x, y, figCol)
         self.figure = PiecesDict["Rock"]
         self.hasMoved = False
+        self.MoveNumber = None
     
-    
-    def setMovedToTrue(self):
+    def setMovedToTrue(self, count):
         self.hasMoved = True
+        self.MoveNumber = count
 
-
+    def setMovedToFalse(self):
+        self.hasMoved = False
+        self.MoveNumber = None
 
     def ReturnPossibleMoves(self, board):
         moves = []
@@ -213,7 +214,7 @@ class Rock(Piece):
         # for a in range(4):
         #     if(a%2==0): val = lambda a:a+1
         #     else: val = lambda a:a+1
-        #     x , y = self.x, self.y
+        #    
         #     while(equalsList[a%2==0]):
         #         if(board[x][y].isEmpty()): moves.append((x,y))
         #         elif(board[x][y].getColorOfFigure() == self.color): 
@@ -228,7 +229,7 @@ class Rock(Piece):
 
         
 
-
+        x , y = self.x, self.y
         while(x >= 0):
             if(board[x][y].isEmpty()): moves.append((x,y))
             elif(board[x][y].getColorOfFigure() == self.color): 
@@ -376,9 +377,15 @@ class King(Piece):
         super().__init__(x, y, figCol)
         self.figure = PiecesDict["King"]
         self.hasMoved = False
-
-    def setMovedToTrue(self):
+        self.MoveNumber = None
+    
+    def setMovedToTrue(self, count):
         self.hasMoved = True
+        self.MoveNumber = count
+
+    def setMovedToFalse(self):
+        self.hasMoved = False
+        self.MoveNumber = None
 
     def checkForDanger(self, moves, attacks):
         for a in moves:

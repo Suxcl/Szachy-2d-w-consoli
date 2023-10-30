@@ -2,6 +2,7 @@ from field import field
 from dicts import colors, piecesASCII, PiecesDict
 from piece import *
 import time
+from rich.prompt import Confirm
 
 import logging
 logging.basicConfig(filename='example.log',format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', encoding='utf-8', level=logging.DEBUG)
@@ -9,24 +10,21 @@ logging.basicConfig(filename='example.log',format='%(asctime)s %(message)s', dat
 class chessboard:
     def __init__(self):
         self.board = [[field(col,row) for col in range(8)] for row in range(8)]
-        self.tmpBoard = None
         self.move_count = 0
-        self.whiteIsInMate = False
-        self.whiteIsInChechMate = False
-        self.blackIsInMate = False
-        self.blackIsInChechMate = False
+        self.gameState = 1
         self.winner = None
         self.moves = []
         self.attacks = []
-        self.gameState = 1
-        self.move = None
         self.moveList = []
-        
+        self.choosenField= None
+            
     def getMoveList(self):return self.moveList
 
     def translateMoveTo01(self,x,y):
         return 8-y, xWhiteTranslation[x] 
 
+    def translateMoveToHuman(self, x, y):
+        return yToHumanTranslation[y], 8-x
 
     def checkIfFieldHasSameColorASCurrentPlayer(self, x, y):
         if(self.board[x][y].getColorOfFigure() == colors["white"] if self.move_count%2==0 else colors["black"]):
@@ -55,16 +53,24 @@ class chessboard:
 
     def InputValue(self, code):       
         print(f'       Player Color: {"black" if self.move_count%2==1 else "white"}')
+        print(f'       Possible Commnads: [exit, stop, undo]  Field choosing input looks liek this: "a-h,1-8"')
         if(code == 1): prompt = "       Choose figure: "
         if(code == 2): prompt = "       Choose destination: "
         inp = input(prompt)
         # quiting game - saving state
         if inp in ['exit', 'quit', 'q']:
-            return (9,9)
+            wynik = Confirm.ask("       Do you want to quit this game?")
+            if wynik: return False
+            return True
         # canceling current move
-        if inp in ['stop', 'cancel']:
-            return (10,10)
-        
+        if inp in ['stop', 'cancel']: 
+            if(self.choosenField!=None): 
+                self.removePosibleMovesFromBoard() 
+                return True
+            else: return False
+        if inp in ['undo']: 
+            self.UndoMove()
+            return True
         
         if(self.checkRequiremtns(inp)): 
             x,y = self.translateMoveTo01(inp[0],int(inp[1]))
@@ -74,9 +80,9 @@ class chessboard:
                 if(self.checkIfXYInMoves(x,y) == False and self.checkIfXYInAttacks(x,y) == False): 
                     print(errors["BadInput_IllegalMove"])
                     time.sleep(2)
-                    return (8,8)
+                    return 1
                 else: return x,y
-        else: return (8,8)
+        else: return 1
         
     def newBoard(self, side = None):
         num = 0
@@ -119,23 +125,16 @@ class chessboard:
 
         Field = self.board[x][y]
         Figure = self.board[x][y].getFigure()
-
-        logging.debug(f'CheckIfMoveFromFieldIsPossible(): attempting with {x,y} args')
         if(Field.isEmpty()):                                      #check if field is empty
             print(errors["FieldIsEmpty"])
             time.sleep(2)
-            logging.debug(f'CheckIfMoveFromFieldIsPossible(): choosen field is empty')
             return False
         if(self.move_count%2==0 and Field.getColorOfFigure() == 'b' #check if field contains current player figure
            or self.move_count%2==1 and Field.getColorOfFigure() == 'w'):
             print(errors["ChoosingEnemyFigure"])
             time.sleep(2)
-            logging.debug(f'CheckIfMoveFromFieldIsPossible(): choosen field is enemy color')
             return False
-        if(Field.DefendingKing()):                              #check if current figure is blocking kign from attack
-            print(errors["PieceIsDefendingKing"])
-            time.sleep(2)
-            return False
+
 
         return True
     
@@ -149,13 +148,16 @@ class chessboard:
         return True
 
     # moving figure and saving move to self.list
-    def moveFromAtoB(self,x1,y1,x2,y2):
+    def moveFromAtoB(self,x1,y1,x2,y2,capture=None):
+        if capture == None: capture = True
         figure1 = self.board[x1][y1].getFigure()
-        fig2 = None
-        if(self.board[x2][y2].isEmpty() == True): fig2 = None
-        else: fig2.self.board[x2][y2].getFigure().getFigAndCol()
-        
-        self.moveList.append([figure1.getFigAndCol(),x1,y1,x2,y2,fig2])
+        if(capture):
+            
+            fig2 = None
+            if(self.board[x2][y2].isEmpty() == True): fig2 = None
+            else: fig2 = self.board[x2][y2].getFigure().getFigAndCol()
+            
+            self.moveList.append([figure1.getFigAndCol(),x1,y1,x2,y2,fig2])
 
 
         self.board[x2][y2].setFieldOcupant(figure1)
@@ -164,7 +166,21 @@ class chessboard:
     def removePosibleMovesFromBoard(self):
         self.moves = []
         self.attacks = []
-        self.move = None
+        self.choosenField= None
+
+    def UndoMove(self):
+        if(self.move_count==0): return
+        self.removePosibleMovesFromBoard() 
+        values = self.moveList.pop()
+        self.moveFromAtoB(values[3],values[4],values[1],values[2], False)
+        if(values[5]!=None):
+                self.board[values[3]][values[4]].undoFieldOcupant()
+        self.move_count -=1
+        if(self.board[values[1]][values[2]].getFigure().getFigChar() in [PiecesDict["King"],PiecesDict["Rock"],PiecesDict["Pawn"]]):
+            moved = self.board[values[1]][values[2]].getFigure().MoveNumber
+        if(moved != None and moved == self.move_count):
+            self.board[values[1]][values[2]].getFigure().setMovedToFalse()
+
 
     def CheckForCastling(self, x,y, x_dest, y_dest):
         figure = self.board[x][y].getFigure()
@@ -182,42 +198,35 @@ class chessboard:
                     kingY2 = 0
                     if(kingY > y): kingY2 = kingY-2
                     else: kingY2 = kingY+2
-                    kingFig.setMovedToTrue()
-                    figure.setMovedToTrue()
+                    kingFig.setMovedToTrue(self.move_count)
+                    figure.setMovedToTrue(self.move_count)
                     self.moveFromAtoB(x, y, x_dest, y_dest)
                     self.moveFromAtoB(kingX, kingY, kingX, kingY2)
                     return True
         return False
 
-    def Move(self):
-        
-        x,y = self.move
+    def SelectDestination(self):
+        #if(self.choosenField== None): return False
+        x,y = self.choosenField
         logging.debug(f'Move(): attempting move() with {x,y}')
 
+        inp = self.InputValue(2)
+        if inp == False: return False
+        if inp == True: return True
         
-        x_dest,y_dest = self.InputValue(2)
-        
-        if((x_dest, y_dest) == (8,8)): return False
-        if((x_dest, y_dest) == (9,9)): 
-            self.gameState = 3
-            return False
-        if((x_dest, y_dest) == (10,10)): 
-            self.removePosibleMovesFromBoard() 
-            return True
-
-        chosen_move = (x_dest,y_dest)
+        x_dest,y_dest = inp
         
         if (self.CheckForCastling(x,y,x_dest,y_dest) == False):
             if(self.board[x][y].getFigure().getFigChar() in [PiecesDict["King"],PiecesDict["Rock"],PiecesDict["Pawn"]]): 
-                self.board[x][y].getFigure().setMovedToTrue()
+                self.board[x][y].getFigure().setMovedToTrue(self.move_count)
     
-            if(self.checkIfFieldHasSameColorASCurrentPlayer(x_dest, y_dest)==False and self.board[x_dest][y_dest].isEmpty() == False and self.board[x_dest][y_dest].getFigure().getFigChar()==PiecesDict["King"]):
-                self.gameState = 0
-                self.winner = colors["white"] if self.move_count%2==0 else colors["black"]
-                return True
+            # if(self.checkIfFieldHasSameColorASCurrentPlayer(x_dest, y_dest)==False and self.board[x_dest][y_dest].isEmpty() == False and self.board[x_dest][y_dest].getFigure().getFigChar()==PiecesDict["King"]):
+            #     self.gameState = 0
+            #     self.winner = "white" if self.move_count%2==0 else "black"
+            #     return True
 
 
-            self.moveFromAtoB(x,y,chosen_move[0],chosen_move[1])
+            self.moveFromAtoB(x,y,x_dest,y_dest)
 
             # check for Pawn tranformation
             if(x_dest == 0 and self.move_count%2 == 0 and self.board[x_dest][y_dest].getFigure().getFigChar() == PiecesDict["Pawn"]):
@@ -226,47 +235,52 @@ class chessboard:
                 self.board[x_dest][y_dest].setFieldOcupant(Queen(x_dest, y_dest, colors["black"]))
                 
             self.removePosibleMovesFromBoard() 
-        
-        
+
+            if self.moveList[-1][5] != None and self.moveList[-1][5] in ['kw','kb']:
+                self.gameState = 0
+                self.winner = "white" if self.moveList[-1][5]=='kb' else "black"
 
         self.move_count+=1
-
         return True
         
 
     def CheckField(self,x,y):
-        logging.debug(f'CheckField(): attempting with {x,y}')
-
-        if not(self.CheckIfMoveFromFieldIsPossible(x,y)): return False
-        logging.debug(f'CheckField(): move is possible')
-
+        if(self.CheckIfMoveFromFieldIsPossible(x,y) == False): return False
         self.GetPossibleMoves(x,y)
-        logging.debug(f'CheckField(): moves and attacks registered')
-
         if self.moves == None and self.attacks == None: return False
-        logging.debug(f'CheckField(): there are possible moves from that location')
 
         return True
 
-    
 
     def ChooseFigure(self):
         if(self.gameState == 0):
-            print(f'Game Ended Player {self.winner} won!')
+            print(f'       Game Ended Player {self.winner} won!')
             time.sleep(3)
-            self.gameState == 2
-            return True
+            return 2
         elif(self.gameState == 1):
-            
-            x,y = self.InputValue(1)
-            if((x,y) == (8,8)): 
+            #if(self.choosenField!= None): return False
+            inp = self.InputValue(1)
+            # command in inp - restart method
+            if(inp == False or inp == True): 
                 return False
-            self.move = (x,y)
+            x,y = inp
+            self.choosenField= x,y
             if(self.CheckField(x,y)): return True
             else: return False
 
-    
+    def gameStep(self):
+        if(self.choosenField == None): 
+            ret = self.ChooseFigure()
+            if(ret == 1): return False
+            elif(ret == 2): return 1
+            else: return True
+        else: 
+            ret = self.SelectDestination()
 
+
+
+
+    
     # return tuple with figurechar and color and value of background color
     def returnBoard(self):
         result = []
@@ -274,13 +288,10 @@ class chessboard:
             tmp = []
             for b in range(8):
                 Field = self.board[a][b]
-                if(Field.isEmpty()): tmp.append((Field.getBackGroundColor()+'B',Field.getBackGroundColor()))
+                if(Field.isEmpty()): tmp.append((str(Field.getBackGroundColor())+'B',Field.getBackGroundColor()))
                 else: tmp.append((Field.getPieceAndColor(),Field.getBackGroundColor()))
             result.append(tmp)
-        return result, self.moves, self.attacks, self.move
-
-    
-
+        return result, self.moves, self.attacks, self.choosenField
 
 
     def printBoard(self, board = None):
@@ -314,11 +325,9 @@ class chessboard:
 
 # do zrobienia
 # roszada kurna nie działa
-# lista ruchów
-# cofanie ruchu
+
+
 # zapis gry przynajmniej jednej
-# interfejs
-# błedy 
-# te jebany rich
-# zakonczenie gry
+
+
 # 
