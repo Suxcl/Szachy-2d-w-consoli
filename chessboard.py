@@ -67,10 +67,10 @@ class chessboard:
             if(self.choosenField!=None): 
                 self.removePosibleMovesFromBoard() 
                 return True
-            else: return False
+            else: return True
         if inp in ['undo']: 
             self.UndoMove()
-            return True
+            return 1
         
         if(self.checkRequiremtns(inp)): 
             x,y = self.translateMoveTo01(inp[0],int(inp[1]))
@@ -261,6 +261,7 @@ class chessboard:
             #if(self.choosenField!= None): return False
             inp = self.InputValue(1)
             # command in inp - restart method
+            if(inp == 1): return 1
             if(inp == False or inp == True): 
                 return False
             x,y = inp
